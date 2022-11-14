@@ -6,3 +6,8 @@ LookOut is a Jackbox Style game created for new years 2022 for our group of frie
   -  MainGame (doubles for VR / Main screen)
   -  PhoneGame
   -  Broker
+
+## Tech
+- React
+- Redux
+- Socket.IO
