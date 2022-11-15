@@ -21,31 +21,56 @@ app.get("/status", (req, res) => {
   res.json({ status: 200 });
 });
 
+/// Test start GET
+app.get("/start", (req, res) => {
+  io.emit("gameStarted", { message: "The game has started." });
+});
+
 io.on("connection", (socket) => {
   console.log(`A new user connected to socket.`);
 
+  /// General ping request.
   socket.on("ping", () => {
     socket.emit("pong");
   });
 
+  /// Request for player to join a lobby.
   socket.on("joinLobby", (username, callback) => {
     if (_connectedPlayers.some((p) => p.username === username)) {
+      console.log(
+        `${username} tried to join the lobby, but someone with the same name has already connected.`
+      );
+
       callback({
-        state: -1,
+        status: -1,
         message: `User with username ${username} already connected.`,
       });
       return;
     }
+
+    // Create new user
     let newUser = new Player(username);
     _connectedPlayers.push(newUser);
+
+    console.log(`${newUser.username} has joined the lobby.`);
+
+    // Broadcast playerJoined event.
+    io.emit("playerJoinedLobby", {
+      message: `${username} has joined the lobby.`,
+      user: newUser,
+      players: _connectedPlayers,
+    });
+
+    // Return succesfull connect callback.
     callback({
       status: 0,
-      message: "Succesfully joined the lobby.",
+      message: "Successfully joined the lobby.",
       user: newUser,
       players: _connectedPlayers,
     });
   });
 
+  /// Request from a player to get a new avatar and theme colour.
   socket.on("requestNewAvatar", (username, callback) => {
     let player = _connectedPlayers.find((p) => p.username === username);
 
@@ -63,6 +88,13 @@ io.on("connection", (socket) => {
     callback({ status: 0, message: "New avatar created.", user: player });
   });
 
+  /// Request from VR to start the game.
+  socket.on("startGame", (callback) => {
+    io.emit("gameStarted", { message: "The game has started." });
+    callback({ status: 0, message: "Game successfully started." });
+  });
+
+  /// Socket disconnect event.
   socket.on("disconnect", () => {
     console.log("A socket connection closed.");
   });

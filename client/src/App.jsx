@@ -3,30 +3,32 @@ import Lobby from "./components/lobby/Lobby";
 
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
+import { useDispatch, useSelector } from "react-redux";
 import styled from "styled-components";
 
 import { contrastColor } from "contrast-color";
+import { receivedPong, setConnected } from "./redux/networkSlice";
 
 const socket = io();
 
 const App = () => {
-  const [isConnected, setIsConnected] = useState(socket.connected);
-  const [lastPong, setLastPong] = useState(null);
+  const dispatch = useDispatch();
 
-  const [themeColour, setThemeColour] = useState("#ff0000");
+  const user = useSelector((state) => state.user);
+  const network = useSelector((state) => state.network);
 
   useEffect(() => {
     socket.on("connect", () => {
-      setIsConnected(true);
+      dispatch(setConnected(true));
     });
 
     socket.on("disconnect", () => {
-      setIsConnected(false);
+      dispatch(setConnected(false));
     });
 
     socket.on("pong", () => {
       console.log("Pong!");
-      setLastPong(new Date().toISOString());
+      dispatch(receivedPong())
     });
 
     return () => {
@@ -44,8 +46,8 @@ const App = () => {
   return (
     <MainWindow className="App">
       <Header
-        themeColour={themeColour}
-        textColour={contrastColor({ bgColor: themeColour })}
+        themeColour={user.colour}
+        textColour={contrastColor({ bgColor: user.colour })}
       >
         <Title>LookOut VR</Title>
       </Header>
@@ -53,14 +55,16 @@ const App = () => {
       <p>Last pong: {lastPong || "-"}</p>
       <button onClick={sendPing}>Send ping</button> */}
       <Content>
-        <Lobby socket={socket} setPlayerThemeColour={setThemeColour} />
+        <Lobby socket={socket} />
       </Content>
       <Footer
-        themeColour={themeColour}
-        textColour={contrastColor({ bgColor: themeColour })}
+        themeColour={user.colour}
+        textColour={contrastColor({ bgColor: user.colour })}
       >
         <span>v{process.env.REACT_APP_VERSION}</span>
-        <span>Server Status: {isConnected ? "Connected" : "Disconnected"}</span>
+        <span>
+          Server Status: {network.isConnected ? "Connected" : "Disconnected"}
+        </span>
       </Footer>
     </MainWindow>
   );
